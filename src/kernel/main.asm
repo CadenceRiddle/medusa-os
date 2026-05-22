@@ -1,4 +1,4 @@
-org 0x7C00
+org 0x0
 bits 16
 
 %define ENDL 0x0D, 0x0A
@@ -26,11 +26,11 @@ puts:
 
 main: 
 
-    mov ax, 0
+    mov ax, cs
     mov ds, ax
     mov es, ax
     mov ss, ax
-    mov sp, 0x7C00
+    mov sp, 0xFFFE
     mov si, msg_hello
     call puts
 
@@ -39,7 +39,7 @@ main:
 .halt:
     jmp .halt
 
-msg_hello: db 'Hello World!', ENDL, 0
+msg_hello: db 'Hello World from the Boot Loader!', ENDL, 0
 
 times 510-($-$$) db 0
 dw 0AA55h

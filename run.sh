@@ -1,1 +1,1 @@
-qemu-system-i386 -fda build/main_floppy.img -boot a
+qemu-system-i386 -drive file=build/main_floppy.img,if=floppy,format=raw -boot a
