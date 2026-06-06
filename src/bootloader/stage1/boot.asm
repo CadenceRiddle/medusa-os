@@ -88,7 +88,7 @@ start:
     mov di, buffer
 
 .search_kernel:
-    mov si, file_kernel_bin
+    mov si, file_stage2_bin
     mov cx, 11
     push di
     repe cmpsb
@@ -176,7 +176,7 @@ floppy_error:
     jmp wait_key_and_reboot
 
 kernel_not_found_error:
-    mov si, msg_kernel_not_found
+    mov si, msg_stage2_not_found
     call puts
     jmp wait_key_and_reboot
 
@@ -266,8 +266,8 @@ disk_reset:
 
 msg_loading: db 'Loading...', ENDL, 0
 msg_read_failed:  db 'Read from disk failed', ENDL, 0
-msg_kernel_not_found: db 'STAGE2.BIN file not found!', ENDL, 0
-file_kernel_bin: db 'STAGE2  BIN'
+msg_stage2_not_found: db 'STAGE2.BIN file not found!', ENDL, 0
+file_stage2_bin: db 'STAGE2  BIN'
 kernel_cluster: dw 0
 
 KERNEL_LOAD_SEGMENT equ 0x2000

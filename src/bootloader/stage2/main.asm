@@ -7,7 +7,10 @@ global entry
 
 entry:
     cli
-    mov ax, ds
+    push cs
+    pop ax
+    mov ds, ax
+    mov es, ax
     mov ss, ax
     mov sp, 0
     mov bp, sp
