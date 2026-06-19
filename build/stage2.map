@@ -1,7 +1,7 @@
 Open Watcom Linker Version 2.0 beta Jun  4 2026 05:34:57 (64-bit)
 Copyright (c) 2002-2026 The Open Watcom Contributors. All Rights Reserved.
 Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
-Created on:       26/06/05 21:14:18
+Created on:       26/06/18 21:57:14
 Executable Image: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2.bin
 creating a RAW Binary Image executable
 
@@ -13,7 +13,7 @@ creating a RAW Binary Image executable
 Group                           Address              Size
 =====                           =======              ====
 
-DGROUP                          00000098             00000014
+DGROUP                          000006a2             00000090
 
 
 
@@ -25,10 +25,10 @@ Segment                Class          Group          Address         Size
 =======                =====          =====          =======         ====
 
 _ENTRY                 CODE           AUTO           00000000        00000017
-_TEXT                  CODE           AUTO           00000017        00000080
-CONST                  DATA           DGROUP         00000098        00000014
-CONST2                 DATA           DGROUP         000000ac        00000000
-_DATA                  DATA           DGROUP         000000ac        00000000
+_TEXT                  CODE           AUTO           00000017        0000068b
+CONST                  DATA           DGROUP         000006a2        0000007d
+CONST2                 DATA           DGROUP         00000720        00000011
+_DATA                  DATA           DGROUP         00000732        00000000
 
 
                         +----------------+
@@ -44,12 +44,16 @@ Address        Symbol
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/asm/main.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/asm/main.obj)
 00000000       entry
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/asm/x86.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/asm/x86.obj)
-00000017       _x86_Video_WriteCharTeletype_
+00000017       _x86_div64_32
+00000045       _x86_Video_WriteCharTeletype
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/main.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/main.obj)
-00000024       _cstart_
+00000056       _cstart_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/stdio.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/stdio.obj)
-0000003e+      putc_
-00000060       puts_
+000000d0+      putc_
+000000f7       puts_
+0000012e       _printf
+0000038a+      printf_number_
+00000720+      _g_HexChars
 
 
                         +---------------------+
@@ -65,17 +69,17 @@ Module          Segment               Class           Address         Size
 /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/asm/main.obj
                 _ENTRY                CODE           00000000         00000017
 /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/asm/x86.obj
-                _TEXT                 CODE           00000017         0000000d
+                _TEXT                 CODE           00000017         0000003f
 /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/main.obj
-                _TEXT                 CODE           00000024         0000001a
-                CONST                 DATA           00000098         00000014
-                CONST2                DATA           000000ac         00000000
-                _DATA                 DATA           000000ac         00000000
+                _TEXT                 CODE           00000056         0000007a
+                CONST                 DATA           000006a2         0000007d
+                CONST2                DATA           00000720         00000000
+                _DATA                 DATA           00000732         00000000
 /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/stdio.obj
-                _TEXT                 CODE           0000003e         00000059
-                CONST                 DATA           000000ac         00000000
-                CONST2                DATA           000000ac         00000000
-                _DATA                 DATA           000000ac         00000000
+                _TEXT                 CODE           000000d0         000005d2
+                CONST                 DATA           00000720         00000000
+                CONST2                DATA           00000720         00000011
+                _DATA                 DATA           00000732         00000000
 Warning! W1014: stack segment not found
 
 
@@ -84,6 +88,6 @@ Warning! W1014: stack segment not found
                         +-----------------------+
 
 Stack size:  0200 (512.)
-Memory size:  00ac (172.)
+Memory size:  0732 (1842.)
 Entry point address: 00000000
-Link time: 00:00.37
+Link time: 00:00.14
