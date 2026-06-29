@@ -19,7 +19,7 @@ At a high level, the project does this:
 9. The first-stage bootloader jumps to the second-stage bootloader.
 10. The second-stage bootloader sets up a small 16-bit environment for C code.
 11. The second-stage bootloader calls a C function named `cstart_`.
-12. The C code prints `Hello World from C!`.
+12. The C code prints `Hello World from C!` and exercises a tiny local `printf`.
 13. The C code loops forever.
 
 The project also builds a separate `kernel.bin`, but the current boot flow loads and jumps into stage 2 first. The current stage 2 code does not yet load and jump into the kernel.
@@ -538,11 +538,18 @@ In this case, the argument is passed on the stack, which matches the assembly co
 
 ### What the Stage 2 C Code Does
 
-The current C function is small:
+The current C function is small, but it now tests both plain string output and formatted output:
 
 ```c
 void _cdecl cstart_(uint16_t bootDrive){
-    puts("Hello World from C!");
+    puts("Hello World from C!\r\n");
+    printf("Formatted %% %c %s\r\n", 'a', "string");
+    printf("Formatted %d %i %x %p %o %hd %hi %hhu %hhu\r\n",
+           1234, 5678, 0xdead, 0xbeef, 012345,
+           (short)27, (short)-42, (unsigned char)20, (char)-10);
+    printf("Formatted %ld %lx %lld %llx\r\n",
+           -100000000l, 0xdeadbeeful,
+           10200300400ll, 0xdeadbeeffeebdaedull);
     for(;;);
 }
 ```
@@ -557,6 +564,18 @@ Then it prints:
 Hello World from C!
 ```
 
+After that, it calls the project-local `printf` implementation to test:
+
+- literal percent output with `%%`
+- characters with `%c`
+- strings with `%s`
+- signed decimal integers with `%d` and `%i`
+- unsigned decimal integers with `%u`
+- hexadecimal integers and pointers with `%x`, `%X`, and `%p`
+- octal integers with `%o`
+- short and char-sized integer modifiers with `%h` and `%hh`
+- long and long-long modifiers with `%l` and `%ll`
+
 Finally, it enters an infinite loop:
 
 ```c
@@ -567,7 +586,7 @@ That keeps the CPU from returning into unknown code.
 
 ## How Printing Works in Stage 2
 
-There is no normal C standard library here. This project provides its own tiny `putc` and `puts`.
+There is no normal C standard library here. This project provides its own tiny `putc`, `puts`, and `printf`.
 
 ### `puts`
 
@@ -592,11 +611,27 @@ Also in `stdio.c`:
 
 ```c
 void putc(char c){
-    _x86_Video_WriteCharTeletype(c, 0);
+    x86_Video_WriteCharTeletype(c, 0);
 }
 ```
 
 `putc` prints one character by calling an assembly function.
+
+### `printf`
+
+The local `printf` is intentionally small. It is not a full hosted C library implementation, but it supports enough formatting to test variadic arguments in the 16-bit stage 2 environment.
+
+Internally, `printf` walks the format string as a small state machine. Normal characters go directly to `putc`. When it sees `%`, it parses an optional length modifier, then dispatches the format specifier.
+
+Numeric formats are converted by repeatedly dividing the value by the requested radix:
+
+- radix 10 for decimal
+- radix 16 for hexadecimal and pointers
+- radix 8 for octal
+
+Because the code runs in 16-bit real mode, 64-bit division is handled by an assembly helper named `x86_div64_32`.
+
+The formatter also accounts for default C argument promotion. Values passed for `%h` and `%hh` arrive as `int` in the variadic argument list, so the formatter masks or sign-extends them back down before printing.
 
 ### BIOS Teletype Output
 
@@ -604,12 +639,31 @@ In `src/bootloader/stage2/x86.asm`, the assembly wrapper uses BIOS interrupt `in
 
 ```asm
 mov ah, 0Eh
+mov al, [bp + 4]
+mov bh, [bp + 6]
 int 10h
 ```
 
 Function `0Eh` is BIOS teletype output. It prints a character to the screen and advances the cursor.
 
 This is how the C code is able to display text even though there is no operating system and no real C standard library.
+
+The wrapper is called from C using `_cdecl`, so the character and page arguments are read from the stack instead of from arbitrary registers.
+
+### 64-Bit Division Helper
+
+Formatted number output uses this assembly helper:
+
+```c
+void _cdecl x86_div64_32(
+    uint64_t dividend,
+    uint32_t divisor,
+    uint64_t* quotientOut,
+    uint32_t* remainderOut
+);
+```
+
+It divides a 64-bit value by a 32-bit radix and writes both the quotient and the remainder back through pointers. `printf` uses the remainder as the next digit and repeats until the quotient reaches zero.
 
 ## What the Linker Does
 
@@ -720,6 +774,9 @@ If everything works, the boot process should eventually display:
 ```text
 Loading...
 Hello World from C!
+Formatted % a string
+Formatted 1234 5678 dead beef 12345 27 -42 20 246
+Formatted -100000000 deadbeef 10200300400 deadbeeffeebdaed
 ```
 
 The exact display may depend on emulator behavior and how the BIOS screen is initialized.
@@ -745,7 +802,7 @@ Bochs is often useful for OS development because it gives detailed debugging too
 
 This project is still early. Some important limitations are:
 
-- Stage 2 prints text from C, but does not yet load the kernel.
+- Stage 2 prints plain and formatted text from C, but does not yet load the kernel.
 - The kernel is copied into the floppy image, but is not currently reached by the active boot path.
 - The project stays in 16-bit real mode.
 - There is no protected mode or long mode setup yet.
@@ -754,6 +811,7 @@ This project is still early. Some important limitations are:
 - There are no drivers beyond BIOS-based screen and disk access.
 - There is no filesystem support in C yet.
 - The C standard library is not available; only tiny local replacements exist.
+- The local `printf` supports common integer/string formats, but not field width, precision, floating point, dynamic allocation, or locale behavior.
 
 These limitations are normal for an early operating-system project. The current code is focused on proving the basic boot path.
 
@@ -788,11 +846,11 @@ Here is the complete flow in one list:
 25. Stage 2 assembly pushes the boot drive number onto the stack.
 26. Stage 2 assembly calls the C function `_cstart_`.
 27. The C function `cstart_` starts running.
-28. C calls `puts`.
+28. C calls `puts` and `printf`.
 29. `puts` calls `putc` for each character.
 30. `putc` calls an assembly BIOS wrapper.
 31. The BIOS wrapper uses `int 10h` to print each character.
-32. The screen shows `Hello World from C!`.
+32. The screen shows `Hello World from C!` and several formatted output test lines.
 33. The C code loops forever.
 
 ## Good Next Steps
@@ -800,6 +858,7 @@ Here is the complete flow in one list:
 Natural next steps for this project would be:
 
 - Rename `KERNEL_LOAD_SEGMENT` in stage 1 to something like `STAGE2_LOAD_SEGMENT`, since it currently loads stage 2.
+- Expand `printf` only as needed, such as adding width or zero-padding support.
 - Make stage 2 load `kernel.bin` from FAT12.
 - Move shared disk-reading code into stage 2.
 - Add a basic memory map query using BIOS interrupt `int 15h`.
@@ -807,4 +866,4 @@ Natural next steps for this project would be:
 - Build a tiny kernel entry point that stage 2 can jump to.
 - Add clearer error messages for missing files and failed reads.
 
-The important milestone already achieved is this: the machine can boot from a generated floppy image, load a second-stage binary, enter C code, and print through BIOS services.
+The important milestone already achieved is this: the machine can boot from a generated floppy image, load a second-stage binary, enter C code, and print both plain and formatted text through BIOS services.

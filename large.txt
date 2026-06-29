@@ -1,0 +1,71 @@
+Medusa FAT read test file
+=========================
+
+This file is intentionally larger than one 512-byte sector so the stage 2 FAT code
+can exercise multi-sector and multi-cluster reads instead of only reading a tiny
+root-directory entry or a single short text file.
+
+Line 001: The bootloader should be able to find this file in the FAT12 root directory.
+Line 002: The filename is LARGE.TXT when stored in FAT 8.3 directory format.
+Line 003: Reading this file should require following file data beyond the first sector.
+Line 004: Each line adds predictable plain text for quick visual inspection.
+Line 005: If output stops early, check sector advancement and cluster chaining.
+Line 006: If output repeats, check file position and buffer refill logic.
+Line 007: If output is scrambled, check segment:offset pointers passed to BIOS reads.
+Line 008: If the file cannot be opened, check FAT name conversion and root scanning.
+Line 009: The quick brown fox jumps over the lazy dog 0123456789.
+Line 010: ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.
+Line 011: This project is running without a hosted C standard library.
+Line 012: Stage 2 provides tiny local versions of string, memory, and stdio helpers.
+Line 013: BIOS int 13h handles disk reads while the bootloader remains in real mode.
+Line 014: BIOS int 10h handles character output through the teletype function.
+Line 015: FAT12 stores the file as a linked list of clusters in the file allocation table.
+Line 016: The reader must translate each cluster into an LBA sector address.
+Line 017: The reader must copy bytes out of its sector buffer into the caller buffer.
+Line 018: The reader must stop at the requested byte count or the file size.
+Line 019: This line exists to push the file farther through the image.
+Line 020: This line exists to push the file farther through the image.
+Line 021: This line exists to push the file farther through the image.
+Line 022: This line exists to push the file farther through the image.
+Line 023: This line exists to push the file farther through the image.
+Line 024: This line exists to push the file farther through the image.
+Line 025: This line exists to push the file farther through the image.
+Line 026: This line exists to push the file farther through the image.
+Line 027: This line exists to push the file farther through the image.
+Line 028: This line exists to push the file farther through the image.
+Line 029: This line exists to push the file farther through the image.
+Line 030: This line exists to push the file farther through the image.
+Line 031: This line exists to push the file farther through the image.
+Line 032: This line exists to push the file farther through the image.
+Line 033: This line exists to push the file farther through the image.
+Line 034: This line exists to push the file farther through the image.
+Line 035: This line exists to push the file farther through the image.
+Line 036: This line exists to push the file farther through the image.
+Line 037: This line exists to push the file farther through the image.
+Line 038: This line exists to push the file farther through the image.
+Line 039: This line exists to push the file farther through the image.
+Line 040: This line exists to push the file farther through the image.
+Line 041: This line exists to push the file farther through the image.
+Line 042: This line exists to push the file farther through the image.
+Line 043: This line exists to push the file farther through the image.
+Line 044: This line exists to push the file farther through the image.
+Line 045: This line exists to push the file farther through the image.
+Line 046: This line exists to push the file farther through the image.
+Line 047: This line exists to push the file farther through the image.
+Line 048: This line exists to push the file farther through the image.
+Line 049: This line exists to push the file farther through the image.
+Line 050: This line exists to push the file farther through the image.
+Line 051: This line exists to push the file farther through the image.
+Line 052: This line exists to push the file farther through the image.
+Line 053: This line exists to push the file farther through the image.
+Line 054: This line exists to push the file farther through the image.
+Line 055: This line exists to push the file farther through the image.
+Line 056: This line exists to push the file farther through the image.
+Line 057: This line exists to push the file farther through the image.
+Line 058: This line exists to push the file farther through the image.
+Line 059: This line exists to push the file farther through the image.
+Line 060: This line exists to push the file farther through the image.
+Line 061: This line exists to push the file farther through the image.
+Line 062: This line exists to push the file farther through the image.
+Line 063: This line exists to push the file farther through the image.
+Line 064: End of the multi-sector FAT read test file.
