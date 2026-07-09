@@ -189,3 +189,12 @@ _x86_Disk_GetDriveParams:
     mov sp, bp
     pop bp
     ret
+
+global _x86_FarJump
+_x86_FarJump:
+    push bp
+    mov bp, sp
+
+    push word [bp + 4]
+    push word [bp + 6]
+    retf

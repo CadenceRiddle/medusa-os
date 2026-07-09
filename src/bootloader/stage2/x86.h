@@ -11,3 +11,4 @@ bool _cdecl x86_Disk_Read(uint8_t drive, uint16_t cylinder, uint16_t sector, uin
 
 bool _cdecl x86_Disk_GetDriveParams(uint8_t drive, uint8_t* driveTypeOut, uint16_t* cylindersOut, uint16_t* sectorsOut, uint16_t* headsOut);
 
+void _cdecl x86_FarJump(uint16_t segment, uint16_t offset);

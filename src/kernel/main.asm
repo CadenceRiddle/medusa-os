@@ -39,7 +39,7 @@ main:
 .halt:
     jmp .halt
 
-msg_hello: db 'Hello World from the Boot Loader!', ENDL, 0
+msg_hello: db 'Hello from the Medusa kernel!', ENDL, 0
 
 times 510-($-$$) db 0
 dw 0AA55h

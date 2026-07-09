@@ -1,7 +1,7 @@
 Open Watcom Linker Version 2.0 beta Jun  4 2026 05:34:57 (64-bit)
 Copyright (c) 2002-2026 The Open Watcom Contributors. All Rights Reserved.
 Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
-Created on:       26/06/29 17:23:50
+Created on:       26/07/09 19:40:00
 Executable Image: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2.bin
 creating a RAW Binary Image executable
 
@@ -13,7 +13,7 @@ creating a RAW Binary Image executable
 Group                           Address              Size
 =====                           =======              ====
 
-DGROUP                          00001bcc             00000238
+DGROUP                          00001aa0             000001d8
 
 
 
@@ -25,11 +25,11 @@ Segment                Class          Group          Address         Size
 =======                =====          =====          =======         ====
 
 _ENTRY                 CODE           AUTO           00000000        00000017
-_TEXT                  CODE           AUTO           00000017        00001bb5
-CONST                  DATA           DGROUP         00001bcc        00000199
-CONST2                 DATA           DGROUP         00001d66        00000011
-_DATA                  DATA           DGROUP         00001d78        00000004
-_BSS                   BSS            DGROUP         00001d7c        00000088
+_TEXT                  CODE           AUTO           00000017        00001a89
+CONST                  DATA           DGROUP         00001aa0        000001ba
+CONST2                 DATA           DGROUP         00001c5a        00000011
+_DATA                  DATA           DGROUP         00001c6c        00000004
+_BSS                   BSS            DGROUP         00001c70        00000008
 
 
                         +----------------+
@@ -52,101 +52,44 @@ Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/asm/x86
 00000097       _x86_Disk_Reset
 000000ac       _x86_Disk_Read
 000000e3       _x86_Disk_GetDriveParams
+0000012d       _x86_FarJump
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/ctype.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/ctype.obj)
-0000012d+      islower_
-0000016b       toupper_
+00000137+      islower_
+00000175       toupper_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/disk.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/disk.obj)
-000001b3       DISK_Initialize_
-0000022f+      DISK_LBA2CHS_
-000002e2       DISK_ReadSectors_
+000001bd       DISK_Initialize_
+00000239+      DISK_LBA2CHS_
+000002ec       DISK_ReadSectors_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/fat.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/fat.obj)
-00000387+      FAT_ReadBootSector_
-000003bb+      FAT_ReadFat_
-000003ff       FAT_Initialize_
-00000646+      FAT_ClusterToLba_
-0000069c+      FAT_OpenEntry_
-00000854+      FAT_NextCluster_
-000008d6       FAT_Read_
-00000c48       FAT_ReadEntry_
-00000ca4       FAT_Close_
-00000d34+      FAT_findFile_
-00000e8f       FAT_Open_
+00000391+      FAT_ReadBootSector_
+000003c5+      FAT_ReadFat_
+00000409       FAT_Initialize_
+00000650+      FAT_ClusterToLba_
+000006a6+      FAT_OpenEntry_
+0000085e+      FAT_NextCluster_
+000008e0       FAT_Read_
+00000c52+      FAT_ReadEntry_
+00000cae       FAT_Close_
+00000d3e+      FAT_findFile_
+00000e99       FAT_Open_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/main.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/main.obj)
-00001129       _cstart_
+000010ca       _cstart_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/memory.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/memory.obj)
-0000130b       memcpy_
-0000137f       memset_
-000013de       memcmp_
+000011df       memcpy_
+00001253       memset_
+000012b2       memcmp_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/stdio.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/stdio.obj)
-00001457       putc_
-0000147e+      puts_
-000014b5       _printf
-00001711+      printf_number_
-00001d66+      _g_HexChars
+0000132b+      putc_
+00001352+      puts_
+00001389       _printf
+000015e5+      printf_number_
+00001c5a+      _g_HexChars
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/string.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/string.obj)
-00001a29       strchr_
-00001a84+      strcpy_
-00001af8       strlen_
+000018fd       strchr_
+00001958+      strcpy_
+000019cc       strlen_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/utility.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/utility.obj)
-00001b33+      align_
-
-
-                        +---------------------+
-                        |   Module Segments   |
-                        +---------------------+
-
-! = 32-bit segment
-c = initialized communal data
-
-Module          Segment               Class           Address         Size
-======          =======               =====           =======         ====
-
-/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/asm/main.obj
-                _ENTRY                CODE           00000000         00000017
-/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/asm/x86.obj
-                _TEXT                 CODE           00000017         00000116
-/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/ctype.obj
-                _TEXT                 CODE           0000012d         00000086
-                CONST                 DATA           00001bcc         00000000
-                CONST2                DATA           00001d66         00000000
-                _DATA                 DATA           00001d78         00000000
-/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/disk.obj
-                _TEXT                 CODE           000001b3         000001d4
-                CONST                 DATA           00001bcc         00000000
-                CONST2                DATA           00001d66         00000000
-                _DATA                 DATA           00001d78         00000000
-/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/fat.obj
-                _TEXT                 CODE           00000387         00000d39
-                CONST                 DATA           00001bcc         00000130
-                CONST2                DATA           00001d66         00000000
-                _DATA                 DATA           00001d78         00000004
-                _BSS                  BSS            00001d7c         00000008
-/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/main.obj
-                _TEXT                 CODE           000010c0         0000024b
-                CONST                 DATA           00001cfc         00000069
-                CONST2                DATA           00001d66         00000000
-                _DATA                 DATA           00001d7c         00000000
-                _BSS                  BSS            00001d84         00000080
-/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/memory.obj
-                _TEXT                 CODE           0000130b         0000014c
-                CONST                 DATA           00001d66         00000000
-                CONST2                DATA           00001d66         00000000
-                _DATA                 DATA           00001d7c         00000000
-/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/stdio.obj
-                _TEXT                 CODE           00001457         000005d2
-                CONST                 DATA           00001d66         00000000
-                CONST2                DATA           00001d66         00000011
-                _DATA                 DATA           00001d7c         00000000
-/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/string.obj
-                _TEXT                 CODE           00001a29         0000010a
-                CONST                 DATA           00001d66         00000000
-                CONST2                DATA           00001d78         00000000
-                _DATA                 DATA           00001d7c         00000000
-/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/utility.obj
-                _TEXT                 CODE           00001b33         00000099
-                CONST                 DATA           00001d66         00000000
-                CONST2                DATA           00001d78         00000000
-                _DATA                 DATA           00001d7c         00000000
+00001a07+      align_
 Warning! W1014: stack segment not found
 
 
@@ -154,7 +97,7 @@ Warning! W1014: stack segment not found
                         |   Linker Statistics   |
                         +-----------------------+
 
-Stack size:  0200 (512.)
-Memory size:  1e04 (7684.)
+Stack size:  1000 (4096.)
+Memory size:  1c78 (7288.)
 Entry point address: 00000000
-Link time: 00:00.43
+Link time: 00:00.37

@@ -1,6 +1,6 @@
 # Medusa
 
-Medusa is a small operating-system learning project. Right now, it is mostly a bootloader project: it builds a floppy disk image, boots it in an emulator, loads a second-stage bootloader from a FAT12 filesystem, and then proves that the second stage can run C code by printing text on the screen.
+Medusa is a small operating-system learning project. Right now, it builds a floppy disk image, boots it in an emulator, loads a second-stage bootloader from a FAT12 filesystem, uses stage 2 C code to load `kernel.bin`, and then jumps into a tiny 16-bit kernel.
 
 This README explains the project slowly and step by step. It assumes you may be new to operating systems, BIOS booting, assembly language, and C code running outside of a normal operating system.
 
@@ -11,7 +11,7 @@ At a high level, the project does this:
 1. Builds a 1.44 MB floppy disk image.
 2. Formats that image as FAT12, which is an old filesystem commonly used by floppy disks.
 3. Writes a first-stage bootloader into the first 512 bytes of the disk.
-4. Copies `stage2.bin`, `kernel.bin`, and `test.txt` into the FAT12 filesystem.
+4. Copies `stage2.bin`, `kernel.bin`, `test.txt`, and `large.txt` into the FAT12 filesystem.
 5. Boots the floppy image in an emulator such as QEMU or Bochs.
 6. The BIOS loads the first-stage bootloader into memory.
 7. The first-stage bootloader searches the FAT12 root directory for `STAGE2.BIN`.
@@ -19,10 +19,13 @@ At a high level, the project does this:
 9. The first-stage bootloader jumps to the second-stage bootloader.
 10. The second-stage bootloader sets up a small 16-bit environment for C code.
 11. The second-stage bootloader calls a C function named `cstart_`.
-12. The C code prints `Hello World from C!` and exercises a tiny local `printf`.
-13. The C code loops forever.
+12. The C code initializes BIOS disk access and the stage 2 FAT12 reader.
+13. The C code opens `kernel.bin` from the FAT12 filesystem.
+14. The C code loads `kernel.bin` into memory at `1000:0000`.
+15. Stage 2 far-jumps to the loaded kernel.
+16. The kernel prints `Hello from the Medusa kernel!` and halts.
 
-The project also builds a separate `kernel.bin`, but the current boot flow loads and jumps into stage 2 first. The current stage 2 code does not yet load and jump into the kernel.
+The project still includes `test.txt` and `large.txt` as FAT12 test files, but the active boot path now uses `kernel.bin` as the next executable stage.
 
 ## Important Concepts
 
@@ -70,8 +73,9 @@ A filesystem is the structure that lets files exist on a disk. Without a filesys
 - `STAGE2.BIN`
 - `KERNEL.BIN`
 - `TEST.TXT`
+- `LARGE.TXT`
 
-The first-stage bootloader understands just enough FAT12 to find and load `STAGE2.BIN`.
+The first-stage bootloader understands just enough FAT12 to find and load `STAGE2.BIN`. Stage 2 has its own FAT12 reader written in C, which it uses to find and load `KERNEL.BIN`.
 
 ## Project Layout
 
@@ -193,7 +197,7 @@ It becomes:
 build/kernel.bin
 ```
 
-At the moment, this kernel is a small 16-bit assembly program that prints a message and halts. The current stage 2 bootloader does not yet load this kernel.
+At the moment, this kernel is a small 16-bit assembly program that prints a message and halts. Stage 2 loads this kernel from FAT12 and jumps to it.
 
 ### Step 4: Create the Floppy Image
 
@@ -241,6 +245,7 @@ The Makefile uses `mcopy` to copy files into the image:
 mcopy -i build/main_floppy.img build/stage2.bin "::stage2.bin"
 mcopy -i build/main_floppy.img build/kernel.bin "::kernel.bin"
 mcopy -i build/main_floppy.img test.txt "::test.txt"
+mcopy -i build/main_floppy.img large.txt "::large.txt"
 ```
 
 These files are now visible inside the floppy image's FAT12 filesystem.
@@ -538,51 +543,54 @@ In this case, the argument is passed on the stack, which matches the assembly co
 
 ### What the Stage 2 C Code Does
 
-The current C function is small, but it now tests both plain string output and formatted output:
+The current C function acts as the second-stage loader:
 
 ```c
 void _cdecl cstart_(uint16_t bootDrive){
-    puts("Hello World from C!\r\n");
-    printf("Formatted %% %c %s\r\n", 'a', "string");
-    printf("Formatted %d %i %x %p %o %hd %hi %hhu %hhu\r\n",
-           1234, 5678, 0xdead, 0xbeef, 012345,
-           (short)27, (short)-42, (unsigned char)20, (char)-10);
-    printf("Formatted %ld %lx %lld %llx\r\n",
-           -100000000l, 0xdeadbeeful,
-           10200300400ll, 0xdeadbeeffeebdaedull);
-    for(;;);
+    DISK disk;
+    DISK_Initialize(&disk, bootDrive);
+    FAT_Initialize(&disk);
+
+    FAT_File far* fd = FAT_Open(&disk, "/kernel.bin");
+    FAT_Read(&disk, fd, fd->Size, KERNEL_LOAD_ADDRESS);
+    FAT_Close(fd);
+
+    x86_FarJump(KERNEL_LOAD_SEGMENT, KERNEL_LOAD_OFFSET);
 }
 ```
 
 It receives the boot drive number as `bootDrive`.
 
-It currently does not use `bootDrive`, but future code could use it to keep reading from the same disk.
-
-Then it prints:
+Stage 2 uses that drive number to keep reading from the same BIOS disk. It initializes a `DISK` structure, initializes the FAT12 reader, opens `/kernel.bin`, and reads the kernel into memory at:
 
 ```text
-Hello World from C!
+1000:0000
 ```
 
-After that, it calls the project-local `printf` implementation to test:
+Then it calls `x86_FarJump(0x1000, 0x0000)` to transfer control to the kernel. If any stage fails, the loader prints an error and loops forever instead of returning into unknown code.
 
-- literal percent output with `%%`
-- characters with `%c`
-- strings with `%s`
-- signed decimal integers with `%d` and `%i`
-- unsigned decimal integers with `%u`
-- hexadecimal integers and pointers with `%x`, `%X`, and `%p`
-- octal integers with `%o`
-- short and char-sized integer modifiers with `%h` and `%hh`
-- long and long-long modifiers with `%l` and `%ll`
+### Stage 2 FAT12 Reader
 
-Finally, it enters an infinite loop:
+Stage 2 has a small C FAT12 reader. It can:
+
+- read the FAT12 boot sector
+- load the FAT table into memory
+- read root directory entries
+- convert FAT 8.3 filenames like `KERNEL  BIN`
+- follow FAT12 cluster chains
+- read file bytes into a caller-provided buffer
+
+This is how stage 2 loads `kernel.bin` without hardcoding the file's sector location.
+
+### Jumping to the Kernel
+
+Stage 2 uses a tiny assembly helper to leave the bootloader:
 
 ```c
-for(;;);
+void _cdecl x86_FarJump(uint16_t segment, uint16_t offset);
 ```
 
-That keeps the CPU from returning into unknown code.
+In real mode, jumping to the kernel requires changing both `CS` and `IP`. A normal near function call cannot do that, so the helper performs a far control transfer to `1000:0000`.
 
 ## How Printing Works in Stage 2
 
@@ -699,8 +707,8 @@ The stage 2 linker script says:
 
 ```text
 FORMAT RAW BIN
-START=entry
-OFFSET=0
+OPTION START=entry
+OPTION OFFSET=0
 ```
 
 This means:
@@ -708,15 +716,6 @@ This means:
 - produce a raw binary file
 - use `entry` as the starting symbol
 - place the binary as if it starts at offset `0`
-
-The linker also orders code sections:
-
-```text
-SEGMENT _ENTRY
-SEGMENT _TEXT
-```
-
-This helps ensure the entry code comes before the rest of the text/code section.
 
 ## Kernel Stub
 
@@ -733,12 +732,12 @@ It is also 16-bit assembly. It:
 3. Prints:
 
 ```text
-Hello World from the Boot Loader!
+Hello from the Medusa kernel!
 ```
 
 4. Halts.
 
-The kernel currently looks like a simple test program. The project builds it and copies it into the floppy image, but stage 2 does not yet load and execute it.
+The kernel currently looks like a simple test program. The project builds it, copies it into the floppy image, and stage 2 loads and executes it.
 
 ## Helper FAT Tool
 
@@ -773,10 +772,9 @@ If everything works, the boot process should eventually display:
 
 ```text
 Loading...
-Hello World from C!
-Formatted % a string
-Formatted 1234 5678 dead beef 12345 27 -42 20 246
-Formatted -100000000 deadbeef 10200300400 deadbeeffeebdaed
+Loading kernel...
+Jumping to kernel...
+Hello from the Medusa kernel!
 ```
 
 The exact display may depend on emulator behavior and how the BIOS screen is initialized.
@@ -802,14 +800,13 @@ Bochs is often useful for OS development because it gives detailed debugging too
 
 This project is still early. Some important limitations are:
 
-- Stage 2 prints plain and formatted text from C, but does not yet load the kernel.
-- The kernel is copied into the floppy image, but is not currently reached by the active boot path.
+- Stage 2 loads and jumps into the kernel, but the kernel is still only a tiny 16-bit real-mode stub.
 - The project stays in 16-bit real mode.
 - There is no protected mode or long mode setup yet.
 - There is no memory manager.
 - There is no interrupt descriptor table.
 - There are no drivers beyond BIOS-based screen and disk access.
-- There is no filesystem support in C yet.
+- Filesystem support currently lives in the bootloader, not the kernel.
 - The C standard library is not available; only tiny local replacements exist.
 - The local `printf` supports common integer/string formats, but not field width, precision, floating point, dynamic allocation, or locale behavior.
 
@@ -828,7 +825,7 @@ Here is the complete flow in one list:
 7. A blank 1.44 MB image is created.
 8. The image is formatted as FAT12.
 9. `stage1.bin` is written into the first sector.
-10. `stage2.bin`, `kernel.bin`, and `test.txt` are copied into the FAT12 image.
+10. `stage2.bin`, `kernel.bin`, `test.txt`, and `large.txt` are copied into the FAT12 image.
 11. QEMU or Bochs boots the image.
 12. The BIOS loads the first sector to `0x7C00`.
 13. Stage 1 starts running in 16-bit real mode.
@@ -846,12 +843,14 @@ Here is the complete flow in one list:
 25. Stage 2 assembly pushes the boot drive number onto the stack.
 26. Stage 2 assembly calls the C function `_cstart_`.
 27. The C function `cstart_` starts running.
-28. C calls `puts` and `printf`.
-29. `puts` calls `putc` for each character.
-30. `putc` calls an assembly BIOS wrapper.
-31. The BIOS wrapper uses `int 10h` to print each character.
-32. The screen shows `Hello World from C!` and several formatted output test lines.
-33. The C code loops forever.
+28. Stage 2 C initializes BIOS disk access.
+29. Stage 2 C initializes its FAT12 reader.
+30. Stage 2 opens `/kernel.bin`.
+31. Stage 2 reads the kernel into memory at `1000:0000`.
+32. Stage 2 calls `x86_FarJump`.
+33. The kernel starts running.
+34. The kernel prints `Hello from the Medusa kernel!`.
+35. The kernel halts.
 
 ## Good Next Steps
 
@@ -859,11 +858,11 @@ Natural next steps for this project would be:
 
 - Rename `KERNEL_LOAD_SEGMENT` in stage 1 to something like `STAGE2_LOAD_SEGMENT`, since it currently loads stage 2.
 - Expand `printf` only as needed, such as adding width or zero-padding support.
-- Make stage 2 load `kernel.bin` from FAT12.
-- Move shared disk-reading code into stage 2.
+- Move useful boot information, such as boot drive and memory layout, into a small boot info structure passed to the kernel.
+- Decide whether the kernel should stay in real mode briefly or switch to protected mode next.
 - Add a basic memory map query using BIOS interrupt `int 15h`.
 - Switch from real mode to protected mode.
-- Build a tiny kernel entry point that stage 2 can jump to.
+- Give the kernel its own C entry point.
 - Add clearer error messages for missing files and failed reads.
 
-The important milestone already achieved is this: the machine can boot from a generated floppy image, load a second-stage binary, enter C code, and print both plain and formatted text through BIOS services.
+The important milestone already achieved is this: the machine can boot from a generated floppy image, load a second-stage binary, enter C code, read `kernel.bin` from FAT12, and jump into a separate kernel image.
