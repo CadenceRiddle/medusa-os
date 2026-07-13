@@ -1,6 +1,8 @@
 #include "stdint.h"
 #pragma once
 
+#include "../../bootinfo.h"
+
 void _cdecl x86_Video_WriteCharTeletype(char c, uint8_t page);
 
 void _cdecl x86_div64_32(uint64_t dividend, uint32_t divisor, uint64_t* quotientOut, uint32_t* remainderOut);
@@ -11,4 +13,7 @@ bool _cdecl x86_Disk_Read(uint8_t drive, uint16_t cylinder, uint16_t sector, uin
 
 bool _cdecl x86_Disk_GetDriveParams(uint8_t drive, uint8_t* driveTypeOut, uint16_t* cylindersOut, uint16_t* sectorsOut, uint16_t* headsOut);
 
+bool _cdecl x86_GetMemoryMap(BootMemoryMapEntry far* entries, uint16_t maxEntries, uint16_t* entryCountOut);
+
 void _cdecl x86_FarJump(uint16_t segment, uint16_t offset);
+void _cdecl x86_FarJumpWithBootInfo(uint16_t segment, uint16_t offset, BootInfo* bootInfo);

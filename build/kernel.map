@@ -1,0 +1,64 @@
+Open Watcom Linker Version 2.0 beta Jun  4 2026 05:34:57 (64-bit)
+Copyright (c) 2002-2026 The Open Watcom Contributors. All Rights Reserved.
+Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
+Created on:       26/07/13 17:28:22
+Executable Image: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/kernel.bin
+creating a RAW Binary Image executable
+
+
+                        +------------+
+                        |   Groups   |
+                        +------------+
+
+Group                           Address              Size
+=====                           =======              ====
+
+DGROUP                          0000033a             000000ae
+
+
+
+                        +--------------+
+                        |   Segments   |
+                        +--------------+
+
+Segment                Class          Group          Address         Size
+=======                =====          =====          =======         ====
+
+_ENTRY                 CODE           AUTO           00000000        00000024
+_TEXT                  CODE           AUTO           00000024        00000316
+CONST                  DATA           DGROUP         0000033a        000000ae
+CONST2                 DATA           DGROUP         000003e8        00000000
+_DATA                  DATA           DGROUP         000003e8        00000000
+
+
+                        +----------------+
+                        |   Memory Map   |
+                        +----------------+
+
+* = unreferenced symbol
++ = symbol only referenced locally
+
+Address        Symbol
+=======        ======
+
+Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/kernel/asm/main.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/kernel/asm/main.obj)
+00000000       entry
+00000024       _kernel_putchar
+Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/kernel/c/main.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/kernel/c/main.obj)
+000000e6+      kernel_puts_
+00000138+      kernel_print_hex_digit_
+00000184+      kernel_print_hex16_
+000001c5+      kernel_print_hex32_
+000001f5+      kernel_print_memory_map_entry_
+00000284       _kernel_main
+Warning! W1014: stack segment not found
+
+
+                        +-----------------------+
+                        |   Linker Statistics   |
+                        +-----------------------+
+
+Stack size:  1000 (4096.)
+Memory size:  03e8 (1000.)
+Entry point address: 00000000
+Link time: 00:00.09

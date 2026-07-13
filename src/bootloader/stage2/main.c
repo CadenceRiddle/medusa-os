@@ -3,12 +3,15 @@
 #include "disk.h"
 #include "fat.h"
 #include "x86.h"
+#include "../../bootinfo.h"
 
 #define KERNEL_LOAD_SEGMENT 0x1000
 #define KERNEL_LOAD_OFFSET 0x0000
 #define KERNEL_LOAD_ADDRESS ((uint8_t far*)0x10000000)
 
 void _cdecl cstart_(uint16_t bootDrive){
+    static BootInfo bootInfo;
+
     DISK disk;
     if(!DISK_Initialize(&disk, bootDrive)){
         printf("Disk init error\r\n");
@@ -35,8 +38,15 @@ void _cdecl cstart_(uint16_t bootDrive){
     }
     FAT_Close(fd);
 
+    bootInfo.bootDrive = bootDrive;
+    bootInfo.kernelSegment = KERNEL_LOAD_SEGMENT;
+    bootInfo.kernelOffset = KERNEL_LOAD_OFFSET;
+    if (!x86_GetMemoryMap(bootInfo.memoryMapEntries, BOOTINFO_MEMORY_MAP_MAX_ENTRIES, &bootInfo.memoryMapEntryCount)){
+        printf("Memory map unavailable\r\n");
+    }
+
     printf("Jumping to kernel...\r\n");
-    x86_FarJump(KERNEL_LOAD_SEGMENT, KERNEL_LOAD_OFFSET);
+    x86_FarJumpWithBootInfo(KERNEL_LOAD_SEGMENT, KERNEL_LOAD_OFFSET, &bootInfo);
 
 end:
     for(;;);

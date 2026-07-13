@@ -198,3 +198,83 @@ _x86_FarJump:
     push word [bp + 4]
     push word [bp + 6]
     retf
+
+global _x86_GetMemoryMap
+_x86_GetMemoryMap:
+    push bp
+    mov bp, sp
+
+    push es
+    push bx
+    push cx
+    push dx
+    push si
+    push di
+
+    mov di, [bp + 4]
+    mov ax, [bp + 6]
+    mov es, ax
+    xor ebx, ebx
+    xor si, si
+
+.next_entry:
+    cmp si, [bp + 8]
+    jae .success
+
+    mov eax, 0E820h
+    mov edx, 0534D4150h
+    mov ecx, 24
+    mov dword [es:di + 20], 1
+    int 15h
+
+    jc .done_or_failed
+    cmp eax, 0534D4150h
+    jne .failed
+    cmp ecx, 20
+    jb .failed
+
+    inc si
+    add di, 24
+
+    test ebx, ebx
+    jnz .next_entry
+
+.success:
+    mov di, [bp + 10]
+    mov [di], si
+    mov ax, 1
+    jmp .done
+
+.done_or_failed:
+    cmp si, 0
+    jne .success
+
+.failed:
+    mov di, [bp + 10]
+    mov word [di], 0
+    xor ax, ax
+
+.done:
+    pop di
+    pop si
+    pop dx
+    pop cx
+    pop bx
+    pop es
+
+    mov sp, bp
+    pop bp
+    ret
+
+global _x86_FarJumpWithBootInfo
+_x86_FarJumpWithBootInfo:
+    push bp
+    mov bp, sp
+
+    mov ax, ds
+    mov es, ax
+    mov bx, [bp + 8]
+
+    push word [bp + 4]
+    push word [bp + 6]
+    retf
