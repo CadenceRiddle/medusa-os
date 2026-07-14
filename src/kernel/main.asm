@@ -1,108 +1,60 @@
 bits 16
+org 10000h
 
-section _ENTRY class=CODE
+KERNEL_BASE equ 10000h
+KERNEL32_OFFSET equ 1000h
+KERNEL32_ENTRY equ KERNEL_BASE + KERNEL32_OFFSET
 
-extern _kernel_main
-global entry
+CODE_SEGMENT equ gdt_code - gdt_start
+DATA_SEGMENT equ gdt_data - gdt_start
 
 entry:
     cli
-    mov ax, es
-    mov di, ax
-    mov si, bx
 
-    mov ax, cs
-    mov ds, ax
+    mov dx, cs
+    mov ds, dx
+
+    xor eax, eax
+    mov ax, es
+    shl eax, 4
+    movzx ebx, bx
+    add eax, ebx
+    mov [boot_info_physical - KERNEL_BASE], eax
+
+    mov ax, dx
     mov es, ax
     mov ss, ax
     mov sp, 0FFFEh
     mov bp, sp
-    sti
 
-    push di
-    push si
-    call _kernel_main
-    add sp, 4
-
-    call enter_protected_mode
-
-.halt:
-    cli
-    hlt
-    jmp .halt
-
-section _TEXT class=CODE
-
-global _kernel_putchar
-_kernel_putchar:
-    push bp
-    mov bp, sp
-
-    mov ah, 0Eh
-    mov al, [bp + 4]
-    mov bh, 0
-    int 10h
-
-    mov sp, bp
-    pop bp
-    ret
-
-enter_protected_mode:
-    cli
-
-    xor eax, eax
-    mov ax, cs
-    shl eax, 4
-    mov bx, ax
-    mov [gdt_code + 2], bx
-    shr eax, 16
-    mov [gdt_code + 4], al
-    mov [gdt_code + 7], ah
-
-    xor eax, eax
-    mov ax, cs
-    shl eax, 4
-    add eax, gdt_start
-    mov [gdt_descriptor + 2], eax
-
-    lgdt [gdt_descriptor]
+    lgdt [gdt_descriptor - KERNEL_BASE]
 
     mov eax, cr0
     or eax, 1
     mov cr0, eax
 
-    jmp CODE_SEGMENT:protected_mode_entry
+    jmp dword CODE_SEGMENT:protected_mode_entry
 
 bits 32
 protected_mode_entry:
-    mov ax, CODE_SEGMENT
-    mov ds, ax
-
     mov ax, DATA_SEGMENT
+    mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
     mov ss, ax
     mov esp, 090000h
 
-    mov esi, protected_mode_message
-    mov edi, 0B8000h + 160 * 10
-    mov ah, 0Ah
+    push dword [boot_info_physical]
+    call KERNEL32_ENTRY
+    add esp, 4
 
-.print:
-    lodsb
-    test al, al
-    jz .done
-    mov [es:edi], ax
-    add edi, 2
-    jmp .print
-
-.done:
+.halt:
+    cli
     hlt
-    jmp .done
+    jmp .halt
 
-bits 16
-
+align 8
 gdt_start:
     dq 0
 
@@ -126,9 +78,9 @@ gdt_end:
 
 gdt_descriptor:
     dw gdt_end - gdt_start - 1
-    dd 0
+    dd gdt_start
 
-CODE_SEGMENT equ gdt_code - gdt_start
-DATA_SEGMENT equ gdt_data - gdt_start
+boot_info_physical: dd 0
 
-protected_mode_message: db 'Entered 32-bit protected mode', 0
+times KERNEL32_OFFSET - ($ - $$) db 0
+incbin KERNEL32_BIN

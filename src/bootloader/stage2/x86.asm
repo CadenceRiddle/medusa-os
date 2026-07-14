@@ -271,9 +271,9 @@ _x86_FarJumpWithBootInfo:
     push bp
     mov bp, sp
 
-    mov ax, ds
+    mov ax, [bp + 8]
     mov es, ax
-    mov bx, [bp + 8]
+    mov bx, [bp + 10]
 
     push word [bp + 4]
     push word [bp + 6]

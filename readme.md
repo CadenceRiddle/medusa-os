@@ -1,6 +1,6 @@
 # Medusa
 
-Medusa is a small operating-system learning project. Right now, it builds a floppy disk image, boots it in an emulator, loads a second-stage bootloader from a FAT12 filesystem, uses stage 2 C code to load `kernel.bin`, and then jumps into a tiny 16-bit kernel.
+Medusa is a small operating-system learning project. Right now, it builds a floppy disk image, boots it in an emulator, loads a second-stage bootloader from a FAT12 filesystem, uses stage 2 C code to load `kernel.bin`, collects BIOS boot information, and then jumps into a tiny 32-bit protected-mode C kernel.
 
 This README explains the project slowly and step by step. It assumes you may be new to operating systems, BIOS booting, assembly language, and C code running outside of a normal operating system.
 
@@ -22,9 +22,10 @@ At a high level, the project does this:
 12. The C code initializes BIOS disk access and the stage 2 FAT12 reader.
 13. The C code opens `kernel.bin` from the FAT12 filesystem.
 14. The C code loads `kernel.bin` into memory at `1000:0000`.
-15. Stage 2 fills a small `BootInfo` structure and passes its address in `ES:BX`.
+15. Stage 2 fills a small `BootInfo` structure, copies it to `9000:0000`, and passes that address in `ES:BX`.
 16. Stage 2 far-jumps to the loaded kernel.
-17. The C kernel prints its startup messages and boot information, then halts.
+17. The kernel switches to 32-bit protected mode.
+18. The protected-mode C kernel prints startup messages, boot information, and memory map entries, then halts.
 
 The project still includes `test.txt` and `large.txt` as FAT12 test files, but the active boot path now uses `kernel.bin` as the next executable stage.
 
@@ -82,35 +83,41 @@ The first-stage bootloader understands just enough FAT12 to find and load `STAGE
 
 ```text
 .
-├── Makefile
-├── run.sh
-├── debug.sh
-├── bochs_config
-├── test.txt
-├── tools/
-│   └── fat/
-│       └── fat.c
-└── src/
-    ├── bootloader/
-    │   ├── stage1/
-    │   │   ├── Makefile
-    │   │   └── boot.asm
-    │   └── stage2/
-    │       ├── Makefile
-    │       ├── linker.lnk
-    │       ├── main.asm
-    │       ├── main.c
-    │       ├── stdio.c
-    │       ├── stdio.h
-    │       ├── stdint.h
-    │       ├── x86.asm
-    │       └── x86.h
-    └── kernel/
-        ├── Makefile
-        ├── linker.lnk
-        ├── main.asm
-        ├── main.c
-        └── stdint.h
+|-- Makefile
+|-- run.sh
+|-- debug.sh
+|-- bochs_config
+|-- test.txt
+|-- large.txt
+|-- tools/
+|   `-- fat/
+|       `-- fat.c
+`-- src/
+    |-- bootinfo.h
+    |-- bootloader/
+    |   |-- stage1/
+    |   |   |-- Makefile
+    |   |   `-- boot.asm
+    |   `-- stage2/
+    |       |-- Makefile
+    |       |-- linker.lnk
+    |       |-- main.asm
+    |       |-- main.c
+    |       |-- ctype.c
+    |       |-- disk.c
+    |       |-- fat.c
+    |       |-- memory.c
+    |       |-- stdio.c
+    |       |-- string.c
+    |       |-- utility.c
+    |       |-- x86.asm
+    |       `-- x86.h
+    `-- kernel/
+        |-- Makefile
+        |-- linker32.ld
+        |-- main.asm
+        |-- main32.c
+        `-- stdint.h
 ```
 
 The most important files are:
@@ -119,10 +126,12 @@ The most important files are:
 - `src/bootloader/stage1/boot.asm`: The first 512-byte boot sector.
 - `src/bootloader/stage2/main.asm`: The assembly entry point for stage 2.
 - `src/bootloader/stage2/main.c`: The C entry point for stage 2.
-- `src/bootloader/stage2/stdio.c`: Very small text output functions for stage 2.
+- `src/bootloader/stage2/fat.c`: Stage 2 FAT12 reader used to load `kernel.bin`.
+- `src/bootloader/stage2/stdio.c`: Very small text output and formatting functions for stage 2.
 - `src/bootloader/stage2/x86.asm`: BIOS interrupt wrapper used by C code.
+- `src/bootinfo.h`: Shared boot information structure passed from stage 2 to the kernel.
 - `src/kernel/main.asm`: The kernel's 16-bit assembly entry point.
-- `src/kernel/main.c`: The kernel's C entry point.
+- `src/kernel/main32.c`: The kernel's 32-bit protected-mode C entry point.
 - `tools/fat/fat.c`: A helper program for reading a file from the FAT12 disk image.
 
 ## Build Process
@@ -188,13 +197,14 @@ src/bootloader/stage2/linker.lnk
 
 It tells the linker to produce a raw binary and start at the symbol named `entry`.
 
-### Step 3: Build the Kernel Stub
+### Step 3: Build the Kernel
 
 The kernel is currently built from:
 
 ```text
 src/kernel/main.asm
-src/kernel/main.c
+src/kernel/main32.c
+src/kernel/linker32.ld
 ```
 
 It becomes:
@@ -203,7 +213,7 @@ It becomes:
 build/kernel.bin
 ```
 
-At the moment, this kernel is a small 16-bit assembly/C program that prints a message and halts. Stage 2 loads this kernel from FAT12 and jumps to it.
+At the moment, this kernel is a small mixed-mode program. A 16-bit assembly entry receives control from stage 2, switches to 32-bit protected mode, and then calls a freestanding 32-bit C function named `kernel_main32`.
 
 ### Step 4: Create the Floppy Image
 
@@ -565,7 +575,12 @@ void _cdecl cstart_(uint16_t bootDrive){
     bootInfo.kernelSegment = KERNEL_LOAD_SEGMENT;
     bootInfo.kernelOffset = KERNEL_LOAD_OFFSET;
 
-    x86_FarJumpWithBootInfo(KERNEL_LOAD_SEGMENT, KERNEL_LOAD_OFFSET, &bootInfo);
+    x86_GetMemoryMap(bootInfo.memoryMapEntries, BOOTINFO_MEMORY_MAP_MAX_ENTRIES,
+                     &bootInfo.memoryMapEntryCount);
+
+    *BOOTINFO_LOAD_ADDRESS = bootInfo;
+    x86_FarJumpWithBootInfo(KERNEL_LOAD_SEGMENT, KERNEL_LOAD_OFFSET,
+                            BOOTINFO_LOAD_SEGMENT, BOOTINFO_LOAD_OFFSET);
 }
 ```
 
@@ -577,7 +592,7 @@ Stage 2 uses that drive number to keep reading from the same BIOS disk. It initi
 1000:0000
 ```
 
-Then it fills a `BootInfo` structure and calls `x86_FarJumpWithBootInfo(0x1000, 0x0000, &bootInfo)` to transfer control to the kernel. If any stage fails, the loader prints an error and loops forever instead of returning into unknown code.
+Then it fills a `BootInfo` structure, copies it to `9000:0000`, and calls `x86_FarJumpWithBootInfo(0x1000, 0x0000, 0x9000, 0x0000)` to transfer control to the kernel. If any stage fails, the loader prints an error and loops forever instead of returning into unknown code.
 
 ### Boot Information
 
@@ -602,10 +617,10 @@ typedef struct {
 } BootInfo;
 ```
 
-The pointer is passed in `ES:BX` during the far jump. The kernel assembly entry preserves that pointer while setting up its own segments and stack, then passes it to C as:
+Stage 2 stores this structure at physical address `0x90000` before jumping to the kernel. The pointer is passed in `ES:BX` during the far jump. The kernel assembly entry converts `ES:BX` into a flat physical pointer before entering protected mode, then passes it to C as:
 
 ```c
-void _cdecl kernel_main(BootInfo far* bootInfo);
+void kernel_main32(const BootInfo* bootInfo);
 ```
 
 This gives the kernel its first bit of boot context: which BIOS drive was used, where the kernel was loaded, and what physical memory ranges BIOS reported through `int 15h, E820h`.
@@ -638,7 +653,8 @@ Stage 2 uses a tiny assembly helper to leave the bootloader:
 void _cdecl x86_FarJumpWithBootInfo(
     uint16_t segment,
     uint16_t offset,
-    BootInfo* bootInfo
+    uint16_t bootInfoSegment,
+    uint16_t bootInfoOffset
 );
 ```
 
@@ -775,26 +791,33 @@ The kernel files are:
 
 ```text
 src/kernel/main.asm
-src/kernel/main.c
+src/kernel/main32.c
+src/kernel/linker32.ld
 ```
 
 The assembly file starts first. It:
 
-1. Sets up segment registers.
-2. Sets up a stack.
-3. Calls the C function `kernel_main`.
-4. Halts if `kernel_main` returns.
+1. Sets `DS` to the kernel's real-mode segment.
+2. Converts the `BootInfo` pointer from `ES:BX` into a flat physical address.
+3. Loads a small Global Descriptor Table.
+4. Sets the protected-mode bit in `CR0`.
+5. Far-jumps into 32-bit protected mode using a 32-bit far jump.
+6. Sets flat protected-mode segment registers and a stack.
+7. Calls the 32-bit C function `kernel_main32`.
+8. Halts if `kernel_main32` returns.
 
-The C file currently prints:
+The 32-bit C file writes directly to VGA text memory and currently prints:
 
 ```text
-Hello from the Medusa C kernel!
-The bootloader loaded kernel.bin and jumped here.
+Entered 32-bit protected mode
+Hello from the Medusa protected-mode C kernel
 Boot drive: 0x0000
 Kernel loaded at: 1000:0000
+Memory map entries: 0x0006
+  base=0x0000000000000000 len=0x000000000009FC00 type=0x00000001
 ```
 
-The kernel currently looks like a simple test program. The project builds it, copies it into the floppy image, and stage 2 loads and executes it. After its real-mode C diagnostics run, it loads a small GDT, enables protected mode, and writes a confirmation message directly to VGA text memory.
+The kernel currently looks like a simple test program. The project builds it, copies it into the floppy image, and stage 2 loads and executes it. Once protected mode is enabled, BIOS interrupts are no longer used; screen output comes from direct writes to VGA memory at `0xB8000`.
 
 ## Helper FAT Tool
 
@@ -828,19 +851,15 @@ So it builds the image and then starts QEMU with the floppy image attached as dr
 If everything works, the boot process should eventually display:
 
 ```text
-Loading...
-Loading kernel...
-Jumping to kernel...
-Hello from the Medusa C kernel!
-The bootloader loaded kernel.bin and jumped here.
+Entered 32-bit protected mode
+Hello from the Medusa protected-mode C kernel
 Boot drive: 0x0000
 Kernel loaded at: 1000:0000
-Memory map entries: 0x0005
-  base=0x0000000000000000 length=0x000000000009FC00 type=0x00000001
-Entered 32-bit protected mode
+Memory map entries: 0x0006
+  base=0x0000000000000000 len=0x000000000009FC00 type=0x00000001
 ```
 
-The exact memory map count and regions depend on emulator firmware. The kernel prints only the first few entries to keep the screen readable. The protected-mode message is written directly to VGA text memory after BIOS services are no longer available.
+Stage 2 still prints loading messages before the kernel runs, but the protected-mode kernel clears the VGA text screen when `kernel_main32` starts. The exact memory map count and regions depend on emulator firmware. The kernel prints only the first few entries to keep the screen readable.
 
 ## Debugging With Bochs
 
@@ -864,7 +883,7 @@ Bochs is often useful for OS development because it gives detailed debugging too
 This project is still early. Some important limitations are:
 
 - Stage 2 loads and jumps into the kernel, but the kernel is still only a tiny demonstration program.
-- The kernel can enter 32-bit protected mode, but most kernel code still runs before that in 16-bit real mode.
+- The kernel can enter 32-bit protected mode, but it does not yet have protected-mode interrupts, paging, or memory management.
 - There is no long mode setup yet.
 - There is no memory manager.
 - There is no interrupt descriptor table.
@@ -884,7 +903,7 @@ Here is the complete flow in one list:
 3. NASM builds stage 2 assembly object files.
 4. Open Watcom builds stage 2 C object files.
 5. The linker combines stage 2 objects into `stage2.bin`.
-6. NASM and Open Watcom build `kernel.bin` from `src/kernel/main.asm` and `src/kernel/main.c`.
+6. NASM, GCC, and `ld` build `kernel.bin` from `src/kernel/main.asm` and `src/kernel/main32.c`.
 7. A blank 1.44 MB image is created.
 8. The image is formatted as FAT12.
 9. `stage1.bin` is written into the first sector.
@@ -914,10 +933,10 @@ Here is the complete flow in one list:
 33. Stage 2 fills `BootInfo`.
 34. Stage 2 calls `x86_FarJumpWithBootInfo`.
 35. The kernel starts running with `ES:BX` pointing to `BootInfo`.
-36. The kernel assembly entry calls `kernel_main`.
-37. The C kernel prints its startup messages, boot information, and the first memory map entries.
-38. The kernel loads a GDT and enables 32-bit protected mode.
-39. The protected-mode code writes `Entered 32-bit protected mode` to VGA text memory.
+36. The kernel assembly entry loads a GDT and enables 32-bit protected mode.
+37. The protected-mode assembly entry sets flat segments and a stack.
+38. The protected-mode assembly entry calls `kernel_main32`.
+39. The C kernel writes startup messages, boot information, and memory map entries to VGA text memory.
 40. The kernel halts.
 
 ## Good Next Steps
@@ -927,9 +946,9 @@ Natural next steps for this project would be:
 - Rename `KERNEL_LOAD_SEGMENT` in stage 1 to something like `STAGE2_LOAD_SEGMENT`, since it currently loads stage 2.
 - Expand `printf` only as needed, such as adding width or zero-padding support.
 - Use the E820 memory map to identify usable RAM and reserve bootloader/kernel regions.
-- Move more kernel code to run after the protected-mode switch.
+- Add basic protected-mode runtime helpers such as `memcpy`, `memset`, and a cleaner VGA console.
 - Add a protected-mode IDT before enabling hardware interrupts.
-- Start moving kernel behavior out of bootloader-style demos and into `kernel_main`.
+- Start moving kernel behavior out of bootloader-style demos and into `kernel_main32`.
 - Add clearer error messages for missing files and failed reads.
 
 The important milestone already achieved is this: the machine can boot from a generated floppy image, load a second-stage binary, enter C code, read `kernel.bin` from FAT12, collect a BIOS memory map, jump into a separate kernel image with boot information, and enter 32-bit protected mode.

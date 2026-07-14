@@ -8,6 +8,9 @@
 #define KERNEL_LOAD_SEGMENT 0x1000
 #define KERNEL_LOAD_OFFSET 0x0000
 #define KERNEL_LOAD_ADDRESS ((uint8_t far*)0x10000000)
+#define BOOTINFO_LOAD_SEGMENT 0x9000
+#define BOOTINFO_LOAD_OFFSET 0x0000
+#define BOOTINFO_LOAD_ADDRESS ((BootInfo far*)0x90000000)
 
 void _cdecl cstart_(uint16_t bootDrive){
     static BootInfo bootInfo;
@@ -45,8 +48,10 @@ void _cdecl cstart_(uint16_t bootDrive){
         printf("Memory map unavailable\r\n");
     }
 
+    *BOOTINFO_LOAD_ADDRESS = bootInfo;
+
     printf("Jumping to kernel...\r\n");
-    x86_FarJumpWithBootInfo(KERNEL_LOAD_SEGMENT, KERNEL_LOAD_OFFSET, &bootInfo);
+    x86_FarJumpWithBootInfo(KERNEL_LOAD_SEGMENT, KERNEL_LOAD_OFFSET, BOOTINFO_LOAD_SEGMENT, BOOTINFO_LOAD_OFFSET);
 
 end:
     for(;;);

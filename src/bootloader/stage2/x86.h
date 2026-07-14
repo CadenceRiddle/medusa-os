@@ -16,4 +16,4 @@ bool _cdecl x86_Disk_GetDriveParams(uint8_t drive, uint8_t* driveTypeOut, uint16
 bool _cdecl x86_GetMemoryMap(BootMemoryMapEntry far* entries, uint16_t maxEntries, uint16_t* entryCountOut);
 
 void _cdecl x86_FarJump(uint16_t segment, uint16_t offset);
-void _cdecl x86_FarJumpWithBootInfo(uint16_t segment, uint16_t offset, BootInfo* bootInfo);
+void _cdecl x86_FarJumpWithBootInfo(uint16_t segment, uint16_t offset, uint16_t bootInfoSegment, uint16_t bootInfoOffset);

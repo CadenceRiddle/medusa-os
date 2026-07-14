@@ -1,7 +1,7 @@
 Open Watcom Linker Version 2.0 beta Jun  4 2026 05:34:57 (64-bit)
 Copyright (c) 2002-2026 The Open Watcom Contributors. All Rights Reserved.
 Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
-Created on:       26/07/13 17:24:31
+Created on:       26/07/14 14:03:29
 Executable Image: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2.bin
 creating a RAW Binary Image executable
 
@@ -13,7 +13,7 @@ creating a RAW Binary Image executable
 Group                           Address              Size
 =====                           =======              ====
 
-DGROUP                          00001b5e             0000037a
+DGROUP                          00001b6e             0000037a
 
 
 
@@ -25,11 +25,11 @@ Segment                Class          Group          Address         Size
 =======                =====          =====          =======         ====
 
 _ENTRY                 CODE           AUTO           00000000        00000017
-_TEXT                  CODE           AUTO           00000017        00001b46
-CONST                  DATA           DGROUP         00001b5e        000001d3
-CONST2                 DATA           DGROUP         00001d32        00000011
-_DATA                  DATA           DGROUP         00001d44        00000004
-_BSS                   BSS            DGROUP         00001d48        00000190
+_TEXT                  CODE           AUTO           00000017        00001b57
+CONST                  DATA           DGROUP         00001b6e        000001d3
+CONST2                 DATA           DGROUP         00001d42        00000011
+_DATA                  DATA           DGROUP         00001d54        00000004
+_BSS                   BSS            DGROUP         00001d58        00000190
 
 
                         +----------------+
@@ -56,42 +56,42 @@ Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/asm/x86
 00000137       _x86_GetMemoryMap
 000001aa       _x86_FarJumpWithBootInfo
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/ctype.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/ctype.obj)
-000001bb+      islower_
-000001f9       toupper_
+000001bc+      islower_
+000001fa       toupper_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/disk.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/disk.obj)
-00000241       DISK_Initialize_
-000002bd+      DISK_LBA2CHS_
-00000370       DISK_ReadSectors_
+00000242       DISK_Initialize_
+000002be+      DISK_LBA2CHS_
+00000371       DISK_ReadSectors_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/fat.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/fat.obj)
-00000415+      FAT_ReadBootSector_
-00000449+      FAT_ReadFat_
-0000048d       FAT_Initialize_
-000006d4+      FAT_ClusterToLba_
-0000072a+      FAT_OpenEntry_
-000008e2+      FAT_NextCluster_
-00000964       FAT_Read_
-00000cd6+      FAT_ReadEntry_
-00000d32       FAT_Close_
-00000dc2+      FAT_findFile_
-00000f1d       FAT_Open_
+00000416+      FAT_ReadBootSector_
+0000044a+      FAT_ReadFat_
+0000048e       FAT_Initialize_
+000006d5+      FAT_ClusterToLba_
+0000072b+      FAT_OpenEntry_
+000008e3+      FAT_NextCluster_
+00000965       FAT_Read_
+00000cd7+      FAT_ReadEntry_
+00000d33       FAT_Close_
+00000dc3+      FAT_findFile_
+00000f1e       FAT_Open_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/main.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/main.obj)
-0000114e       _cstart_
+0000114f       _cstart_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/memory.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/memory.obj)
-0000129c       memcpy_
-00001310       memset_
-0000136f       memcmp_
+000012ad       memcpy_
+00001321       memset_
+00001380       memcmp_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/stdio.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/stdio.obj)
-000013e8+      putc_
-0000140f+      puts_
-00001446       _printf
-000016a2+      printf_number_
-00001d32+      _g_HexChars
+000013f9+      putc_
+00001420+      puts_
+00001457       _printf
+000016b3+      printf_number_
+00001d42+      _g_HexChars
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/string.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/string.obj)
-000019ba       strchr_
-00001a15+      strcpy_
-00001a89       strlen_
+000019cb       strchr_
+00001a26+      strcpy_
+00001a9a       strlen_
 Module: /mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/utility.obj(/mnt/c/Users/caden/OneDrive/Desktop/Projects/medusa/build/stage2/c/utility.obj)
-00001ac4+      align_
+00001ad5+      align_
 Warning! W1014: stack segment not found
 
 
@@ -100,6 +100,6 @@ Warning! W1014: stack segment not found
                         +-----------------------+
 
 Stack size:  1000 (4096.)
-Memory size:  1ed8 (7896.)
+Memory size:  1ee8 (7912.)
 Entry point address: 00000000
-Link time: 00:00.64
+Link time: 00:00.20
