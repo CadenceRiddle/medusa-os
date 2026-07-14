@@ -1,4 +1,5 @@
 #include "stdint.h"
+#include "idt.h"
 #include "../bootinfo.h"
 
 #define VGA_WIDTH 80
@@ -76,6 +77,8 @@ void __attribute__((section(".text.entry"))) kernel_main32(const BootInfo* bootI
 
     vga_clear();
     vga_puts("Entered 32-bit protected mode\n");
+    idt_initialize();
+    vga_puts("Loaded protected-mode IDT\n");
     vga_puts("Hello from the Medusa protected-mode C kernel\n");
     vga_puts("Boot drive: 0x");
     print_hex16(bootInfo->bootDrive);

@@ -114,6 +114,9 @@ The first-stage bootloader understands just enough FAT12 to find and load `STAGE
     |       `-- x86.h
     `-- kernel/
         |-- Makefile
+        |-- idt.c
+        |-- idt.h
+        |-- interrupt.asm
         |-- linker32.ld
         |-- main.asm
         |-- main32.c
@@ -132,6 +135,8 @@ The most important files are:
 - `src/bootinfo.h`: Shared boot information structure passed from stage 2 to the kernel.
 - `src/kernel/main.asm`: The kernel's 16-bit assembly entry point.
 - `src/kernel/main32.c`: The kernel's 32-bit protected-mode C entry point.
+- `src/kernel/idt.c`: Protected-mode IDT setup and CPU exception handler.
+- `src/kernel/interrupt.asm`: 32-bit CPU exception stubs.
 - `tools/fat/fat.c`: A helper program for reading a file from the FAT12 disk image.
 
 ## Build Process
@@ -204,6 +209,8 @@ The kernel is currently built from:
 ```text
 src/kernel/main.asm
 src/kernel/main32.c
+src/kernel/idt.c
+src/kernel/interrupt.asm
 src/kernel/linker32.ld
 ```
 
@@ -214,6 +221,8 @@ build/kernel.bin
 ```
 
 At the moment, this kernel is a small mixed-mode program. A 16-bit assembly entry receives control from stage 2, switches to 32-bit protected mode, and then calls a freestanding 32-bit C function named `kernel_main32`.
+
+The protected-mode C code initializes a small Interrupt Descriptor Table. The IDT currently installs handlers for CPU exceptions `0` through `31`, so early kernel faults can print an exception number and error code instead of immediately triple-faulting and rebooting.
 
 ### Step 4: Create the Floppy Image
 
@@ -792,6 +801,8 @@ The kernel files are:
 ```text
 src/kernel/main.asm
 src/kernel/main32.c
+src/kernel/idt.c
+src/kernel/interrupt.asm
 src/kernel/linker32.ld
 ```
 
@@ -806,10 +817,11 @@ The assembly file starts first. It:
 7. Calls the 32-bit C function `kernel_main32`.
 8. Halts if `kernel_main32` returns.
 
-The 32-bit C file writes directly to VGA text memory and currently prints:
+The 32-bit C file initializes the protected-mode IDT, writes directly to VGA text memory, and currently prints:
 
 ```text
 Entered 32-bit protected mode
+Loaded protected-mode IDT
 Hello from the Medusa protected-mode C kernel
 Boot drive: 0x0000
 Kernel loaded at: 1000:0000
@@ -818,6 +830,15 @@ Memory map entries: 0x0006
 ```
 
 The kernel currently looks like a simple test program. The project builds it, copies it into the floppy image, and stage 2 loads and executes it. Once protected mode is enabled, BIOS interrupts are no longer used; screen output comes from direct writes to VGA memory at `0xB8000`.
+
+If an early CPU exception occurs after the IDT is loaded, the exception handler prints:
+
+```text
+CPU exception 0x0000000D
+Error code    0x00000000
+```
+
+The exact exception number and error code depend on the fault.
 
 ## Helper FAT Tool
 
@@ -852,6 +873,7 @@ If everything works, the boot process should eventually display:
 
 ```text
 Entered 32-bit protected mode
+Loaded protected-mode IDT
 Hello from the Medusa protected-mode C kernel
 Boot drive: 0x0000
 Kernel loaded at: 1000:0000
@@ -883,7 +905,7 @@ Bochs is often useful for OS development because it gives detailed debugging too
 This project is still early. Some important limitations are:
 
 - Stage 2 loads and jumps into the kernel, but the kernel is still only a tiny demonstration program.
-- The kernel can enter 32-bit protected mode, but it does not yet have protected-mode interrupts, paging, or memory management.
+- The kernel can enter 32-bit protected mode and handle CPU exceptions, but it does not yet enable hardware IRQs, paging, or memory management.
 - There is no long mode setup yet.
 - There is no memory manager.
 - There is no interrupt descriptor table.
@@ -903,7 +925,7 @@ Here is the complete flow in one list:
 3. NASM builds stage 2 assembly object files.
 4. Open Watcom builds stage 2 C object files.
 5. The linker combines stage 2 objects into `stage2.bin`.
-6. NASM, GCC, and `ld` build `kernel.bin` from `src/kernel/main.asm` and `src/kernel/main32.c`.
+6. NASM, GCC, and `ld` build `kernel.bin` from the kernel assembly and C files.
 7. A blank 1.44 MB image is created.
 8. The image is formatted as FAT12.
 9. `stage1.bin` is written into the first sector.
@@ -936,8 +958,9 @@ Here is the complete flow in one list:
 36. The kernel assembly entry loads a GDT and enables 32-bit protected mode.
 37. The protected-mode assembly entry sets flat segments and a stack.
 38. The protected-mode assembly entry calls `kernel_main32`.
-39. The C kernel writes startup messages, boot information, and memory map entries to VGA text memory.
-40. The kernel halts.
+39. The C kernel loads an IDT for CPU exception handling.
+40. The C kernel writes startup messages, boot information, and memory map entries to VGA text memory.
+41. The kernel halts.
 
 ## Good Next Steps
 
@@ -947,8 +970,8 @@ Natural next steps for this project would be:
 - Expand `printf` only as needed, such as adding width or zero-padding support.
 - Use the E820 memory map to identify usable RAM and reserve bootloader/kernel regions.
 - Add basic protected-mode runtime helpers such as `memcpy`, `memset`, and a cleaner VGA console.
-- Add a protected-mode IDT before enabling hardware interrupts.
+- Expand the protected-mode IDT to handle hardware IRQs.
 - Start moving kernel behavior out of bootloader-style demos and into `kernel_main32`.
 - Add clearer error messages for missing files and failed reads.
 
-The important milestone already achieved is this: the machine can boot from a generated floppy image, load a second-stage binary, enter C code, read `kernel.bin` from FAT12, collect a BIOS memory map, jump into a separate kernel image with boot information, and enter 32-bit protected mode.
+The important milestone already achieved is this: the machine can boot from a generated floppy image, load a second-stage binary, enter C code, read `kernel.bin` from FAT12, collect a BIOS memory map, jump into a separate kernel image with boot information, enter 32-bit protected mode, and install basic CPU exception handlers.
