@@ -5,6 +5,7 @@ section _ENTRY class=CODE
 extern _cstart_
 global entry
 
+; Sets up a real-mode C environment for stage 2 and calls the C loader entry.
 entry:
     cli
     push cs

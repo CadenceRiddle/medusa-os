@@ -26,6 +26,7 @@ extern void* interrupt_stub_table[];
 static IdtEntry g_idt[IDT_ENTRY_COUNT];
 static IdtDescriptor g_idtDescriptor;
 
+// Installs one 32-bit interrupt gate into the IDT.
 static void idt_set_gate(uint8_t vector, uint32_t handler){
     g_idt[vector].offsetLow = (uint16_t)handler;
     g_idt[vector].selector = KERNEL_CODE_SELECTOR;
@@ -34,10 +35,12 @@ static void idt_set_gate(uint8_t vector, uint32_t handler){
     g_idt[vector].offsetHigh = (uint16_t)(handler >> 16);
 }
 
+// Loads the current IDT descriptor into the CPU's IDTR register.
 static void idt_load(void){
     __asm__ volatile ("lidt %0" : : "m"(g_idtDescriptor));
 }
 
+// Builds and loads an IDT containing handlers for CPU exceptions 0 through 31.
 void idt_initialize(void){
     for (uint16_t i = 0; i < IDT_ENTRY_COUNT; i++){
         g_idt[i].offsetLow = 0;
@@ -56,6 +59,7 @@ void idt_initialize(void){
     idt_load();
 }
 
+// Writes exception text at a fixed screen location without using the normal console state.
 static void exception_write_at(uint16_t row, uint16_t col, const char* str){
     while (*str && row < VGA_HEIGHT){
         VGA_MEMORY[row * VGA_WIDTH + col] = ((uint16_t)EXCEPTION_COLOR << 8) | (uint8_t)*str;
@@ -68,6 +72,7 @@ static void exception_write_at(uint16_t row, uint16_t col, const char* str){
     }
 }
 
+// Writes a 32-bit hexadecimal value at a fixed screen location.
 static void exception_write_hex32(uint16_t row, uint16_t col, uint32_t value){
     const char* digits = "0123456789ABCDEF";
 
@@ -77,6 +82,7 @@ static void exception_write_hex32(uint16_t row, uint16_t col, uint32_t value){
     }
 }
 
+// Handles a CPU exception by printing diagnostic information and halting.
 void kernel_exception_handler(uint32_t vector, uint32_t errorCode){
     exception_write_at(22, 0, "CPU exception 0x");
     exception_write_hex32(22, 16, vector);

@@ -12,6 +12,7 @@
 #define BOOTINFO_LOAD_OFFSET 0x0000
 #define BOOTINFO_LOAD_ADDRESS ((BootInfo far*)0x90000000)
 
+// Stage 2 C entry: initializes disk/FAT, loads the kernel, prepares BootInfo, and jumps away.
 void _cdecl cstart_(uint16_t bootDrive){
     static BootInfo bootInfo;
 

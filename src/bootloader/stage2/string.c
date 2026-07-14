@@ -1,6 +1,7 @@
 #include "string.h"
 #include "stdint.h"
 
+// Finds the first matching character in a null-terminated string.
 const char* strchr(const char* str, char chr){
     if (str == NULL){
         return NULL;
@@ -16,6 +17,7 @@ const char* strchr(const char* str, char chr){
     return NULL;
 }
 
+// Copies a null-terminated string, treating a null source as an empty string.
 char* strcpy(char* dst, const char* src){
 
     char* origDst = dst;
@@ -40,6 +42,7 @@ char* strcpy(char* dst, const char* src){
 
 }
 
+// Counts characters in a null-terminated string before the terminator.
 unsigned strlen(const char* str){
     unsigned len = 0;
     while (*str){

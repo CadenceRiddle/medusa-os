@@ -1,6 +1,7 @@
 #include "disk.h"
 #include "x86.h"
 
+// Queries BIOS for disk geometry and stores the values needed for later reads.
 bool DISK_Initialize(DISK* disk, uint8_t driveNumber){
     uint8_t driveType;
     uint16_t cylinders, sectors, heads;
@@ -18,6 +19,7 @@ bool DISK_Initialize(DISK* disk, uint8_t driveNumber){
     return true;
 }
 
+// Converts a logical block address into BIOS cylinder/head/sector coordinates.
 void DISK_LBA2CHS(DISK* disk, uint32_t lba, uint16_t* cylindersOut, uint16_t* sectorsOut, uint16_t* headsOut){
     *sectorsOut = lba % disk->sectors + 1;
 
@@ -26,6 +28,7 @@ void DISK_LBA2CHS(DISK* disk, uint32_t lba, uint16_t* cylindersOut, uint16_t* se
     *headsOut = (lba / disk->sectors) % disk->heads;
 }
 
+// Reads one or more sectors with retry/reset handling for flaky BIOS disk calls.
 bool DISK_ReadSectors(DISK* disk, uint32_t lba, uint8_t sectors, uint8_t far* dataOut){
     uint16_t cylinder, sector, head;
 

@@ -4,6 +4,7 @@
 
 #pragma pack(push, 1)
 
+// Describes one BIOS E820 physical memory range.
 typedef struct {
     uint32_t baseLow;
     uint32_t baseHigh;
@@ -13,6 +14,7 @@ typedef struct {
     uint32_t acpiAttributes;
 } BootMemoryMapEntry;
 
+// Carries bootloader-provided context into the protected-mode kernel.
 typedef struct {
     uint16_t bootDrive;
     uint16_t kernelSegment;

@@ -37,8 +37,17 @@ enum FAT_Attributes{
     FAT_ATTRIBUTE_LFN           = FAT_ATTRIBUTE_READ_ONLY | FAT_ATTRIBUTE_HIDDEN | FAT_ATTRIBUTE_SYSTEM | FAT_ATTRIBUTE_VOLUME_ID
 };
 
+// Initializes the FAT12 reader for the selected disk.
 bool FAT_Initialize(DISK* disk);
+
+// Opens a root-relative path and returns a bootloader file handle.
 FAT_File far* FAT_Open(DISK* disk, const char* path);
+
+// Reads bytes from an open FAT file into caller-provided memory.
 uint32_t FAT_Read(DISK* disk, FAT_File far* file, uint32_t byteCount, void far* dataOut);
+
+// Reads one directory entry from an open directory handle.
 bool FAT_ReadEntry(DISK* disk, FAT_File far* file, FAT_DirectoryEntry* dataOut);
+
+// Releases or rewinds a FAT file handle.
 void FAT_Close(FAT_File far* file);

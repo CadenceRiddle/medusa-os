@@ -1,5 +1,6 @@
 #include "utility.h"
 
+// Rounds a number up to the next requested alignment boundary.
 uint32_t align(uint32_t number, uint32_t alignTo){
     if (alignTo == 0){
         return number;

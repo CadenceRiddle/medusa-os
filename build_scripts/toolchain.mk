@@ -21,3 +21,30 @@ toolchain_binutils: $(BINUTILS_SRC).tar.xz
 $(BINUTILS_SRC).tar.xz:
 	mkdir -p toolchain
 	cd toolchain && wget $(BINUTILS_URL)
+
+GCC_SRC = toolchain/gcc-$(GCC_VERSION)
+GCC_BUILD = toolchain/gcc-build-$(GCC_VERSION)
+
+toolchain_gcc: toolchain_binutils $(gcc_src).tar.xz
+	cd toolchain && tar -xf gcc-$(GCC_VERSION).tar.xz
+	mkdir $(GCC_BUILD)
+	cd $(GCC_BUILD) && ../gcc-$(GCC_VERSION)/configure	\
+		--prefix="$(TOOLCHAIN_PREFIX)"	\
+		--target=$(TARGET)	\
+		--disable-nls	\
+		--enable-languages=c,c++	\
+		--without-headers
+	$(MAKE) -j8 -C $(GCC_BUILD) all-gcc all-target-libgcc
+	$(MAKE) -c $(gcc_build) install-gcc install-target-libgcc
+
+$(GCC_SRC).tar.xz:
+	mkdir -p toolchain
+	cd toolchain && wget $(GCC_URL)
+
+clean-toolchain:
+	rm -rf $(GCC_BUILD) $(GCC_SRC) $(BINUTILS_BUILD) $(BINUTILS_SRC)
+
+clean-toolchain-all:
+	rm -rf toolchain/*
+
+.PHONY: toolchain toolchain-binutils toolchain_gcc clean-toolchain clean-toolchain-all

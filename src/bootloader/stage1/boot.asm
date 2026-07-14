@@ -28,6 +28,7 @@ ebr_volume_label:           db 'MEDUSA OS  '
 ebr_system_id:              db 'FAT12   '
 
 
+; Boot sector entry: sets up real-mode state, finds STAGE2.BIN in FAT12, and loads it.
 start: 
     mov ax, 0
     mov ds, ax
@@ -170,16 +171,19 @@ start:
     cli
     hlt
 
+; Prints a disk read failure and waits for reboot.
 floppy_error: 
     mov si, msg_read_failed
     call puts
     jmp wait_key_and_reboot
 
+; Prints a missing stage2 error and waits for reboot.
 kernel_not_found_error:
     mov si, msg_stage2_not_found
     call puts
     jmp wait_key_and_reboot
 
+; Waits for a keypress, then jumps to the BIOS reset vector.
 wait_key_and_reboot:
     mov ah, 0
     int 16h
@@ -189,6 +193,7 @@ wait_key_and_reboot:
     cli
     hlt
 
+; Prints a null-terminated string through BIOS teletype output.
 puts:
     push si 
     push ax
@@ -207,6 +212,7 @@ puts:
     pop si 
     ret
 
+; Converts an LBA sector number in AX into BIOS CHS registers.
 lba_to_chs:
     xor dx, dx
     div word [bdb_sectors_per_track]
@@ -221,6 +227,7 @@ lba_to_chs:
     mov dl, [ebr_drive_number]
     ret
 
+; Reads sectors from disk with BIOS int 13h and retries on failure.
 disk_read: 
     push ax
     push bx
@@ -255,6 +262,7 @@ disk_read:
     pop ax
     ret
 
+; Resets the BIOS disk device after a failed read.
 disk_reset:
     mov ah, 0
     mov dl, [ebr_drive_number]

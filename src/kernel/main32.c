@@ -10,12 +10,14 @@
 static uint16_t g_cursor_row;
 static uint16_t g_cursor_col;
 
+// Moves the VGA text cursor to the next line without scrolling yet.
 static void vga_newline(void){
     g_cursor_col = 0;
     if (++g_cursor_row >= VGA_HEIGHT)
         g_cursor_row = VGA_HEIGHT - 1;
 }
 
+// Writes one character directly into VGA text memory.
 static void vga_putc(char c){
     if (c == '\n'){
         vga_newline();
@@ -28,6 +30,7 @@ static void vga_putc(char c){
         vga_newline();
 }
 
+// Writes a null-terminated string to the protected-mode VGA console.
 static void vga_puts(const char* str){
     while (*str){
         vga_putc(*str);
@@ -35,6 +38,7 @@ static void vga_puts(const char* str){
     }
 }
 
+// Clears the VGA text screen and resets the software cursor.
 static void vga_clear(void){
     for (uint16_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++){
         VGA_MEMORY[i] = ((uint16_t)VGA_COLOR << 8) | ' ';
@@ -43,11 +47,13 @@ static void vga_clear(void){
     g_cursor_col = 0;
 }
 
+// Prints one hexadecimal digit to the VGA console.
 static void print_hex_digit(uint8_t value){
     value &= 0x0F;
     vga_putc(value < 10 ? '0' + value : 'A' + value - 10);
 }
 
+// Prints a 16-bit value as four hexadecimal digits.
 static void print_hex16(uint16_t value){
     print_hex_digit(value >> 12);
     print_hex_digit(value >> 8);
@@ -55,11 +61,13 @@ static void print_hex16(uint16_t value){
     print_hex_digit(value);
 }
 
+// Prints a 32-bit value as eight hexadecimal digits.
 static void print_hex32(uint32_t value){
     print_hex16((uint16_t)(value >> 16));
     print_hex16((uint16_t)value);
 }
 
+// Prints one BIOS E820 memory map entry in a compact diagnostic format.
 static void print_memory_map_entry(const BootMemoryMapEntry* entry){
     vga_puts("  base=0x");
     print_hex32(entry->baseHigh);
@@ -72,6 +80,7 @@ static void print_memory_map_entry(const BootMemoryMapEntry* entry){
     vga_putc('\n');
 }
 
+// Protected-mode C entry point: initializes kernel diagnostics and displays boot information.
 void __attribute__((section(".text.entry"))) kernel_main32(const BootInfo* bootInfo){
     uint16_t entriesToPrint;
 

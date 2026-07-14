@@ -1,5 +1,6 @@
 #include "memory.h"
 
+// Copies a byte range between far pointers in real-mode memory.
 void far* memcpy(void far* dst, const void far* src, uint16_t num){
     uint8_t far* u8Dst = (uint8_t far* )dst;
     const uint8_t far* u8Src = (const uint8_t far*)src;
@@ -11,6 +12,7 @@ void far* memcpy(void far* dst, const void far* src, uint16_t num){
     return dst;
 }
 
+// Fills a byte range at a far pointer with a repeated value.
 void far * memset(void far* ptr, int value, uint16_t num){
     uint8_t far* u8Ptr = (uint8_t far *)ptr;
 
@@ -20,6 +22,7 @@ void far * memset(void far* ptr, int value, uint16_t num){
     return ptr;
 }
 
+// Compares two far-pointer memory ranges and reports whether any byte differs.
 int memcmp(const void far* ptr1, const void far* ptr2, uint16_t num){
     const uint8_t far* u8Ptr1 = (const uint8_t far*)ptr1;
     const uint8_t far* u8Ptr2 = (const uint8_t far*)ptr2;

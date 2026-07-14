@@ -66,14 +66,17 @@ static FAT_Data far* g_Data;
 static uint8_t far* g_Fat = NULL;
 static uint32_t g_DataSectionLba;
 
+// Reads the FAT boot sector into the shared FAT workspace.
 bool FAT_ReadBootSector(DISK* disk){
     return DISK_ReadSectors(disk, 0, 1, &g_Data->BS.BootSectorBytes);
 }
 
+// Loads the first FAT table so cluster chains can be followed in memory.
 bool FAT_ReadFat(DISK* disk){
     return DISK_ReadSectors(disk, g_Data->BS.FAT_BootSector.ReservedSectors, g_Data->BS.FAT_BootSector.SectorsPerFat, g_Fat);
 }
 
+// Initializes the FAT12 reader, root directory handle, and shared filesystem buffers.
 bool FAT_Initialize(DISK* disk){
 
     g_Data = (FAT_Data far*)MEMORY_FAT_ADDRESS;
@@ -123,10 +126,12 @@ bool FAT_Initialize(DISK* disk){
     return true;
 }
 
+// Converts a FAT cluster number into the disk LBA where that cluster begins.
 uint32_t FAT_ClusterToLba(uint32_t cluster){
     return g_DataSectionLba + (cluster - 2) * g_Data->BS.FAT_BootSector.SectorsPerCluster;
 }
 
+// Allocates a file handle from a directory entry and reads its first sector.
 FAT_File far* FAT_OpenEntry(DISK* disk, FAT_DirectoryEntry* entry){
     int handle = -1;
     for (int i = 0; i < MAX_FILE_HANDLES && handle < 0; i++){
@@ -158,6 +163,7 @@ FAT_File far* FAT_OpenEntry(DISK* disk, FAT_DirectoryEntry* entry){
     return &fd->Public;
 }
 
+// Looks up the next cluster in a FAT12 cluster chain.
 uint32_t FAT_NextCluster(uint32_t currentCluster){
     uint32_t fatIndex = currentCluster * 3 / 2;
     uint16_t far* fatEntry = (uint16_t far*)(g_Fat + fatIndex);
@@ -168,6 +174,7 @@ uint32_t FAT_NextCluster(uint32_t currentCluster){
         return *fatEntry >> 4;
 }
 
+// Reads bytes from an open file, advancing through sectors and FAT cluster chains as needed.
 uint32_t FAT_Read(DISK* disk, FAT_File far* file, uint32_t byteCount, void far* dataOut){
     FAT_FileData far* fd = (file->Handle == ROOT_DIRECTORY_HANDLE) ? &g_Data->RootDirectory : &g_Data->OpenedFiles[file->Handle];
     uint8_t far* u8DataOut = (uint8_t far*)dataOut;
@@ -214,9 +221,12 @@ uint32_t FAT_Read(DISK* disk, FAT_File far* file, uint32_t byteCount, void far* 
     return bytesRead;
 }
 
+// Reads a single directory entry from an open directory file handle.
 bool FAT_ReadEntry(DISK* disk, FAT_File far* file, FAT_DirectoryEntry* dataOut){
     return FAT_Read(disk, file, sizeof(FAT_DirectoryEntry), dataOut) == sizeof(FAT_DirectoryEntry);
 }
+
+// Closes a file handle or rewinds the root directory pseudo-handle.
 void FAT_Close(FAT_File far* file){
     if (file == NULL){
         return;
@@ -230,6 +240,7 @@ void FAT_Close(FAT_File far* file){
     }
 }
 
+// Searches an open directory for a path component converted into FAT 8.3 format.
 bool FAT_findFile(DISK* disk, FAT_File far* file, const char* name, FAT_DirectoryEntry* entryOut){
     char fatName[11];
     FAT_DirectoryEntry entry;
@@ -270,6 +281,7 @@ bool FAT_findFile(DISK* disk, FAT_File far* file, const char* name, FAT_Director
     return false;
 }
 
+// Opens a root-relative FAT path by walking directory entries one component at a time.
 FAT_File far* FAT_Open(DISK* disk, const char* path){
     char name[MAX_PATH_SIZE];
 

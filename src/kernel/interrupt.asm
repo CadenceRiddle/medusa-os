@@ -52,6 +52,7 @@ ISR_ERROR 29
 ISR_ERROR 30
 ISR_NO_ERROR 31
 
+; Saves register state, forwards exception details to C, and halts if it returns.
 interrupt_common:
     pusha
 
@@ -67,6 +68,7 @@ interrupt_common:
     jmp .halt
 
 section .rodata
+; Table of exception stub addresses used when building the IDT.
 interrupt_stub_table:
     dd interrupt_stub_0
     dd interrupt_stub_1

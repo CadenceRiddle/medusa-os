@@ -8,6 +8,7 @@ KERNEL32_ENTRY equ KERNEL_BASE + KERNEL32_OFFSET
 CODE_SEGMENT equ gdt_code - gdt_start
 DATA_SEGMENT equ gdt_data - gdt_start
 
+; Receives control from stage 2, preserves BootInfo, and enables protected mode.
 entry:
     cli
 
@@ -36,6 +37,7 @@ entry:
     jmp dword CODE_SEGMENT:protected_mode_entry
 
 bits 32
+; Finishes protected-mode setup and calls the 32-bit C kernel entry.
 protected_mode_entry:
     mov ax, DATA_SEGMENT
     mov ds, ax

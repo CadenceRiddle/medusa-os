@@ -1,10 +1,12 @@
 #include "stdio.h"
 #include "x86.h"
 
+// Writes one character using BIOS teletype output while stage 2 is still in real mode.
 void putc(char c){
     x86_Video_WriteCharTeletype(c, 0);
 }
 
+// Writes a null-terminated string through the stage 2 character output path.
 void puts(const char* str){
     while(*str){
         putc(*str);
@@ -26,6 +28,7 @@ void puts(const char* str){
 
 int* printf_number(int* argp, int length, bool sign, int radix);
 
+// Formats a small subset of printf specifiers for bootloader diagnostic output.
 void _cdecl printf(const char* fmt, ...){
 
     int* argp = (int*)&fmt;
@@ -121,6 +124,7 @@ void _cdecl printf(const char* fmt, ...){
 
 const char g_HexChars[] = "0123456789abcdef";
 
+// Reads one integer argument, converts it to the requested radix, and prints it.
 int* printf_number(int* argp, int length, bool sign, int radix){
     char buffer[32];
     unsigned long long number;

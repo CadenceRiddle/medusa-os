@@ -54,10 +54,12 @@ uint8_t* g_Fat = NULL;
 DirectoryEntry* g_RootDirectory = NULL;
 uint32_t g_RootDirectoryEnd;
 
+// Reads the FAT12 boot sector from the start of the disk image.
 bool readBootSector(FILE* disk){
     return fread(&g_BootSector, sizeof(g_BootSector), 1, disk) == 1;
 }
 
+// Reads one or more sectors from the disk image into a caller-provided buffer.
 bool readSectors(FILE* disk, uint32_t lba, uint32_t count, void* bufferOut){
     bool ok = true;
     ok = ok && (fseek(disk, lba * g_BootSector.BytesPerSector, SEEK_SET) == 0);
@@ -65,11 +67,13 @@ bool readSectors(FILE* disk, uint32_t lba, uint32_t count, void* bufferOut){
     return ok;
 }
 
+// Loads the FAT table from the disk image into memory.
 bool readFat(FILE* disk){
     g_Fat = (uint8_t*) malloc(g_BootSector.SectorsPerFat * g_BootSector.BytesPerSector);
     return readSectors(disk, g_BootSector.ReservedSectors, g_BootSector.SectorsPerFat, g_Fat);
 }
 
+// Loads the FAT12 root directory and records where the data region begins.
 bool readRootDirectory(FILE* disk){
     uint32_t lba = g_BootSector.ReservedSectors + g_BootSector.SectorsPerFat * g_BootSector.FatCount;
     uint32_t size = sizeof(DirectoryEntry) * g_BootSector.DirEntryCount;
@@ -82,6 +86,7 @@ bool readRootDirectory(FILE* disk){
     return readSectors(disk, lba, sectors, g_RootDirectory);
 }
 
+// Searches the loaded root directory for an exact FAT 8.3 filename.
 DirectoryEntry* findFile(const char* name){
     for (uint32_t i = 0; i < g_BootSector.DirEntryCount; i++){
         if (memcmp(name, g_RootDirectory[i].Name, 11) == 0){
@@ -91,6 +96,7 @@ DirectoryEntry* findFile(const char* name){
     return NULL;
 }
 
+// Reads a file by following its FAT12 cluster chain.
 bool readFile(DirectoryEntry* fileEntry, FILE* disk, uint8_t* outputBuffer){
     bool ok = true;
      uint16_t currentCluster = fileEntry->FirstClusterLow;
@@ -112,6 +118,7 @@ bool readFile(DirectoryEntry* fileEntry, FILE* disk, uint8_t* outputBuffer){
      return ok;
 }
 
+// Command-line entry: opens a disk image, extracts a FAT12 file, and prints it.
 int main(int argc, char** argv){
     if (argc < 3){
         printf("Syntax: %s <disk image> <file name>\n", argv[0]);

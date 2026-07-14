@@ -3,6 +3,7 @@ bits 16
 section _TEXT class=CODE
 
 global __U4D:
+; Open Watcom helper for unsigned 32-bit division in 16-bit code.
 __U4D:
     shl edx, 16
     mov dx, ax
@@ -23,6 +24,7 @@ __U4D:
     ret
 
 global __U4M
+; Open Watcom helper for unsigned 32-bit multiplication in 16-bit code.
 __U4M:
     shl edx, 16
     mov dx, ax
@@ -38,6 +40,7 @@ __U4M:
     ret
 
 global _x86_div64_32
+; Divides a 64-bit value by a 32-bit value for the bootloader printf formatter.
 _x86_div64_32:
 
     push bp
@@ -67,6 +70,7 @@ _x86_div64_32:
     ret
 
 global _x86_Video_WriteCharTeletype
+; Calls BIOS int 10h teletype output to print one character.
 _x86_Video_WriteCharTeletype:
     push bp
     mov bp, sp
@@ -82,6 +86,7 @@ _x86_Video_WriteCharTeletype:
     ret
 
 global _x86_Disk_Reset
+; Calls BIOS int 13h to reset the selected disk drive.
 _x86_Disk_Reset:
     push bp
     mov bp, sp
@@ -99,6 +104,7 @@ _x86_Disk_Reset:
     ret
 
 global _x86_Disk_Read
+; Calls BIOS int 13h to read sectors using CHS addressing.
 _x86_Disk_Read:
     push bp
     mov bp, sp
@@ -140,6 +146,7 @@ _x86_Disk_Read:
     ret
 
 global _x86_Disk_GetDriveParams
+; Calls BIOS int 13h to query drive geometry used for CHS conversion.
 _x86_Disk_GetDriveParams:
     push bp
     mov bp, sp
@@ -191,6 +198,7 @@ _x86_Disk_GetDriveParams:
     ret
 
 global _x86_FarJump
+; Performs a real-mode far jump to a caller-provided segment and offset.
 _x86_FarJump:
     push bp
     mov bp, sp
@@ -200,6 +208,7 @@ _x86_FarJump:
     retf
 
 global _x86_GetMemoryMap
+; Collects BIOS E820 memory map entries into the caller-provided buffer.
 _x86_GetMemoryMap:
     push bp
     mov bp, sp
@@ -267,6 +276,7 @@ _x86_GetMemoryMap:
     ret
 
 global _x86_FarJumpWithBootInfo
+; Sets ES:BX to BootInfo and far-jumps to the loaded kernel.
 _x86_FarJumpWithBootInfo:
     push bp
     mov bp, sp
